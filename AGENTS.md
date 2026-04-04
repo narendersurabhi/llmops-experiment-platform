@@ -45,6 +45,16 @@ This file tracks repository changes and current status so future agents can quic
   - `README.md`
   - `training/README.md`
   - `evaluation/README.md`
+- Added a root `Makefile` with local developer workflows for:
+  - dependency install, tests, and pipeline compile
+  - Docker image builds
+  - local Kubernetes infra apply/status
+  - MLflow port-forward
+  - KFP training/evaluation run submission with parameterized make targets
+- Updated `README.md` to use `make` commands for local deployment/build/compile/run tasks.
+- Documented UI capability boundaries:
+  - MLflow UI for experiment tracking/inspection
+  - Kubeflow UI for runtime parameter configuration and run launch
 
 ## Notes for Future Agents
 - This repo intentionally uses simulated metrics/checkpoints/benchmarks for platform validation.

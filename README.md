@@ -62,31 +62,31 @@ pip install -r requirements.txt
 ## 3) Deploy Infrastructure to Kubernetes
 
 ```bash
-kubectl apply -f infra/k8s/namespace.yaml
-kubectl apply -f infra/postgres/postgres.yaml
-kubectl apply -f infra/minio/minio.yaml
-kubectl apply -f infra/mlflow/mlflow.yaml
+make infra-apply
 ```
 
 (Optional) Apply Kubeflow-specific resources:
 
 ```bash
-kubectl apply -f infra/kubeflow/
+make infra-apply-kubeflow
+```
+
+Verify resources:
+
+```bash
+make k8s-status
 ```
 
 ## 4) Build Docker Images
 
 ```bash
-docker build -f docker/base/Dockerfile -t llmops/base:latest .
-docker build -f docker/trainer/Dockerfile -t llmops/trainer:latest .
-docker build -f docker/evaluator/Dockerfile -t llmops/evaluator:latest .
+make docker-build
 ```
 
 ## 5) Compile Pipelines
 
 ```bash
-python pipelines/training/training_pipeline.py
-python pipelines/evaluation/evaluation_pipeline.py
+make pipelines-compile
 ```
 
 Compiled pipeline YAMLs are generated in `pipelines/training/compiled/` and `pipelines/evaluation/compiled/`.
@@ -115,7 +115,7 @@ Pipeline generates scorecard JSON and logs to MLflow.
 If MLflow service is exposed internally:
 
 ```bash
-kubectl port-forward -n llmops svc/mlflow 5000:5000
+make mlflow-port-forward
 ```
 
 Open: `http://localhost:5000`
@@ -186,18 +186,20 @@ export KFP_HOST="http://localhost:8080"
 Submit training run:
 
 ```bash
-python scripts/pipelines/submit_training_run.py \
-  --run-config-path configs/training/run.sample.json \
-  --dataset-metadata-path dataset/metadata.sample.json
+make submit-training \
+  RUN_CONFIG_PATH=configs/training/run.sample.json \
+  DATASET_METADATA_PATH=dataset/metadata.sample.json \
+  KFP_HOST=http://localhost:8080
 ```
 
 Submit evaluation run:
 
 ```bash
-python scripts/pipelines/submit_evaluation_run.py \
-  --eval-config-path configs/evaluation/eval.sample.json \
-  --candidate-model-uri models:/candidate-llm/1 \
-  --baseline-model-uri models:/baseline-llm/1
+make submit-evaluation \
+  EVAL_CONFIG_PATH=configs/evaluation/eval.sample.json \
+  CANDIDATE_MODEL_URI=models:/candidate-llm/1 \
+  BASELINE_MODEL_URI=models:/baseline-llm/1 \
+  KFP_HOST=http://localhost:8080
 ```
 
 ### Runtime arguments reference
@@ -210,3 +212,11 @@ Evaluation pipeline:
 - `eval_config_path`
 - `candidate_model_uri`
 - `baseline_model_uri`
+
+## 13) Can experiments be configured from UI?
+
+Short answer: **partially**.
+
+- **MLflow UI**: best for *tracking and analysis* (metrics, params, artifacts, model versions). It does **not** author or launch Kubeflow pipelines. You can compare and inspect runs here, but pipeline runtime inputs still come from run submissions.
+- **Kubeflow Pipelines UI**: yes, you can configure run arguments at submission time (for example `run_config_path`, `dataset_metadata_path`, `eval_config_path`, and model URIs) and launch runs directly from the UI.
+- For reproducibility, keep canonical experiment definitions in versioned JSON config files under `configs/` and submit runs from those paths (UI or script).
