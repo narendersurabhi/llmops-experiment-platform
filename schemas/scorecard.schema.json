@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "candidate_model_uri",
+    "baseline_model_uri",
+    "intrinsic_perplexity",
+    "public_benchmark_score",
+    "domain_benchmark_score",
+    "overall_score",
+    "delta_vs_baseline",
+    "result"
+  ],
+  "properties": {
+    "candidate_model_uri": {"type": "string"},
+    "baseline_model_uri": {"type": "string"},
+    "intrinsic_perplexity": {"type": "number"},
+    "public_benchmark_score": {"type": "number"},
+    "domain_benchmark_score": {"type": "number"},
+    "overall_score": {"type": "number"},
+    "delta_vs_baseline": {"type": "number"},
+    "result": {"type": "string", "enum": ["pass", "fail"]}
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "dataset_name": "toy-instruction-set",
+  "dataset_version": "dataset-v1",
+  "num_samples": 1000,
+  "source": "local-simulated"
+}
