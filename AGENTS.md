@@ -13,6 +13,8 @@ This file tracks repository changes and current status so future agents can quic
 - Added helper scripts for pipeline compilation and infra deployment.
 - Added unit tests and pipeline compile smoke tests.
 - Added full README with architecture, setup, deployment, usage, and outputs.
+- Added a GitHub Actions deployment pipeline to validate/compile and optionally deploy infra.
+- Added KFP submission scripts and docs for manually triggering training and evaluation runs.
 
 ## Change Log
 ### 2026-04-04
@@ -34,6 +36,15 @@ This file tracks repository changes and current status so future agents can quic
 - Added configs/dataset samples and schemas.
 - Added automation scripts and tests.
 - Added top-level `README.md` and `requirements.txt`.
+- Added deployment workflow:
+  - `.github/workflows/deploy-platform.yml`
+- Added KFP run submission scripts:
+  - `scripts/pipelines/submit_training_run.py`
+  - `scripts/pipelines/submit_evaluation_run.py`
+- Expanded user docs for deployment automation and run triggering:
+  - `README.md`
+  - `training/README.md`
+  - `evaluation/README.md`
 
 ## Notes for Future Agents
 - This repo intentionally uses simulated metrics/checkpoints/benchmarks for platform validation.
@@ -41,3 +52,5 @@ This file tracks repository changes and current status so future agents can quic
 - Before running tests, install dependencies from `requirements.txt`.
 - Added `tests/conftest.py` to ensure repository root is available on `PYTHONPATH` during test discovery.
 - Updated tests to gracefully skip when optional dependencies (`mlflow`, `kfp`) are unavailable in offline/sandboxed environments.
+- Deployment automation via GitHub Actions requires `KUBE_CONFIG_DATA` secret (base64 kubeconfig) for the deploy step.
+- KFP submission scripts require `KFP_HOST` or `--host` and compiled pipeline YAML packages.

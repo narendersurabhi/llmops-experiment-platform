@@ -151,3 +151,62 @@ Includes:
 
 - unit tests for trainer/evaluator simulation logic
 - pipeline compile smoke tests
+
+
+## 11) Deployment Pipeline (GitHub Actions)
+
+A GitHub Actions workflow is available at `.github/workflows/deploy-platform.yml`.
+
+- Trigger: **manual** (`workflow_dispatch`)
+- Job 1 (`validate-and-compile`): installs dependencies, runs `pytest -q`, compiles pipelines.
+- Job 2 (`deploy-infra`): optionally applies infra manifests with `scripts/deploy/apply_infra.sh`.
+
+Required GitHub secret for deploy step:
+
+- `KUBE_CONFIG_DATA` (base64-encoded kubeconfig)
+
+## 12) Trigger Training and Evaluation Jobs
+
+### Option A: Kubeflow UI
+
+1. Port-forward Kubeflow Pipelines endpoint/UI based on your install.
+2. Upload compiled pipelines:
+   - `pipelines/training/compiled/training_pipeline.yaml`
+   - `pipelines/evaluation/compiled/evaluation_pipeline.yaml`
+3. Start runs with the runtime arguments described below.
+
+### Option B: Python submit scripts (recommended)
+
+Set your KFP endpoint:
+
+```bash
+export KFP_HOST="http://localhost:8080"
+```
+
+Submit training run:
+
+```bash
+python scripts/pipelines/submit_training_run.py \
+  --run-config-path configs/training/run.sample.json \
+  --dataset-metadata-path dataset/metadata.sample.json
+```
+
+Submit evaluation run:
+
+```bash
+python scripts/pipelines/submit_evaluation_run.py \
+  --eval-config-path configs/evaluation/eval.sample.json \
+  --candidate-model-uri models:/candidate-llm/1 \
+  --baseline-model-uri models:/baseline-llm/1
+```
+
+### Runtime arguments reference
+
+Training pipeline:
+- `run_config_path`
+- `dataset_metadata_path`
+
+Evaluation pipeline:
+- `eval_config_path`
+- `candidate_model_uri`
+- `baseline_model_uri`
