@@ -1,0 +1,7 @@
+{
+  "project": "llmops-local",
+  "config_version": "eval-v1",
+  "run_id": "eval-local-001",
+  "dataset_version": "dataset-v1",
+  "baseline_overall_score": 1.0
+}

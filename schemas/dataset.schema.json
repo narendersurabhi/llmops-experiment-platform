@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["dataset_name", "dataset_version", "num_samples"],
+  "properties": {
+    "dataset_name": {"type": "string"},
+    "dataset_version": {"type": "string"},
+    "num_samples": {"type": "integer", "minimum": 1},
+    "source": {"type": "string"}
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["project", "config_version", "run_id", "dataset_version"],
+  "properties": {
+    "project": {"type": "string"},
+    "config_version": {"type": "string"},
+    "run_id": {"type": "string"},
+    "dataset_version": {"type": "string"},
+    "baseline_overall_score": {"type": "number"}
+  }
+}
