@@ -7,6 +7,96 @@
     "config_version": {"type": "string"},
     "run_id": {"type": "string"},
     "dataset_version": {"type": "string"},
-    "baseline_overall_score": {"type": "number"}
+    "evaluation_mode": {
+      "type": "string",
+      "enum": ["compare", "single_model"]
+    },
+    "baseline_overall_score": {"type": "number"},
+    "minimum_delta_vs_baseline": {"type": "number"},
+    "evaluation_backend": {
+      "type": "string",
+      "enum": ["qwen_service", "simulation", "cpt_model"]
+    },
+    "inference_endpoint": {"type": "string"},
+    "candidate_inference_endpoint": {"type": "string"},
+    "baseline_inference_endpoint": {"type": "string"},
+    "judge_model_id": {"type": "string"},
+    "publish_model_cards": {"type": "boolean"},
+    "system_prompt": {"type": "string"},
+    "max_new_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0
+    },
+    "request_timeout_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "inference_batch_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "dataset_metadata_path": {"type": "string"},
+    "block_size": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "eval_batch_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completion_split": {
+      "type": "string",
+      "enum": ["train", "validation", "eval", "test"]
+    },
+    "completion_sample_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completion_prompt_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completion_reference_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "golden_set_path": {"type": "string"},
+    "benchmark_prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "suite", "prompt"],
+        "properties": {
+          "id": {"type": "string"},
+          "suite": {
+            "type": "string",
+            "enum": ["public", "domain"]
+          },
+          "prompt": {"type": "string"},
+          "system_prompt": {"type": "string"},
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reference_answer": {"type": "string"},
+          "expected_keywords": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "minimum_response_chars": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
   }
 }

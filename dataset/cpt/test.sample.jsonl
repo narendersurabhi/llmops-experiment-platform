@@ -1,0 +1,2 @@
+{"text":"A held-out test split measures whether continued pretraining improved domain fit without relying only on training logs.","source":"llmops-docs","language":"en"}
+{"text":"Throughput and checkpoint quality both matter when deciding whether a pretraining run is production-ready.","source":"llmops-docs","language":"en"}

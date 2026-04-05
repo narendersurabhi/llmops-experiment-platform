@@ -1,0 +1,2 @@
+{"id":"test-001","text":"A held-out test split gives a final quality check after training and validation are complete.","source":"llmops-smoke","language":"en","split":"test"}
+{"id":"test-002","text":"Smoke training datasets should be tiny but still representative enough to verify the end-to-end pipeline.","source":"llmops-smoke","language":"en","split":"test"}

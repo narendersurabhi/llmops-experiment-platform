@@ -1,0 +1,4 @@
+{"text":"Kubernetes orchestrates containerized workloads across clusters and keeps services available during rollouts.","source":"llmops-docs","language":"en"}
+{"text":"MLflow stores metrics, parameters, and artifacts so training and evaluation runs can be compared over time.","source":"llmops-docs","language":"en"}
+{"text":"MinIO provides S3-compatible artifact storage for checkpoints, summaries, and evaluation scorecards in this platform.","source":"llmops-docs","language":"en"}
+{"text":"Kubeflow Pipelines schedules containerized steps and passes artifacts between components in the training workflow.","source":"llmops-docs","language":"en"}

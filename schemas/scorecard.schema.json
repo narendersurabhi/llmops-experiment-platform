@@ -1,24 +1,72 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "required": [
-    "candidate_model_uri",
-    "baseline_model_uri",
-    "intrinsic_perplexity",
-    "public_benchmark_score",
-    "domain_benchmark_score",
-    "overall_score",
-    "delta_vs_baseline",
-    "result"
-  ],
-  "properties": {
-    "candidate_model_uri": {"type": "string"},
-    "baseline_model_uri": {"type": "string"},
-    "intrinsic_perplexity": {"type": "number"},
-    "public_benchmark_score": {"type": "number"},
-    "domain_benchmark_score": {"type": "number"},
-    "overall_score": {"type": "number"},
-    "delta_vs_baseline": {"type": "number"},
-    "result": {"type": "string", "enum": ["pass", "fail"]}
-  }
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "evaluation_mode",
+        "candidate_model_uri",
+        "baseline_model_uri",
+        "intrinsic_perplexity",
+        "public_benchmark_score",
+        "domain_benchmark_score",
+        "overall_score",
+        "delta_vs_baseline",
+        "result"
+      ],
+      "properties": {
+        "evaluation_mode": {"const": "compare"},
+        "candidate_model_uri": {"type": "string"},
+        "baseline_model_uri": {"type": "string"},
+        "candidate_served_model_id": {"type": "string"},
+        "baseline_served_model_id": {"type": ["string", "null"]},
+        "candidate_inference_endpoint": {"type": ["string", "null"]},
+        "baseline_inference_endpoint": {"type": ["string", "null"]},
+        "intrinsic_perplexity": {"type": "number"},
+        "public_benchmark_score": {"type": "number"},
+        "domain_benchmark_score": {"type": "number"},
+        "overall_score": {"type": "number"},
+        "baseline_intrinsic_perplexity": {"type": ["number", "null"]},
+        "baseline_public_benchmark_score": {"type": ["number", "null"]},
+        "baseline_domain_benchmark_score": {"type": ["number", "null"]},
+        "baseline_overall_score": {"type": "number"},
+        "delta_vs_baseline": {"type": "number"},
+        "minimum_delta_vs_baseline": {"type": "number"},
+        "winner": {"type": "string", "enum": ["candidate", "baseline", "tie"]},
+        "result": {"type": "string", "enum": ["pass", "fail"]},
+        "candidate": {"type": "object"},
+        "baseline": {"type": "object"},
+        "comparison": {"type": "object"},
+        "model_card_artifacts": {"type": "object"}
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "evaluation_mode",
+        "model_uri",
+        "served_model_id",
+        "inference_endpoint",
+        "intrinsic_perplexity",
+        "public_benchmark_score",
+        "domain_benchmark_score",
+        "overall_score",
+        "benchmark_results"
+      ],
+      "properties": {
+        "evaluation_mode": {"const": "single_model"},
+        "evaluation_backend": {"type": "string"},
+        "model_uri": {"type": "string"},
+        "served_model_id": {"type": "string"},
+        "inference_endpoint": {"type": "string"},
+        "intrinsic_perplexity": {"type": "number"},
+        "intrinsic_perplexity_is_proxy": {"type": "boolean"},
+        "public_benchmark_score": {"type": "number"},
+        "domain_benchmark_score": {"type": "number"},
+        "overall_score": {"type": "number"},
+        "benchmark_results": {"type": "array"},
+        "model_card_artifacts": {"type": "object"}
+      }
+    }
+  ]
 }

@@ -1,0 +1,55 @@
+{
+  "dataset_name": "qwen2-5-0-5b-llmops-golden-set",
+  "dataset_version": "golden-v1",
+  "description": "Starter golden set for evaluating Qwen/Qwen2.5-0.5B on the LLMOps platform domain.",
+  "benchmark_prompts": [
+    {
+      "id": "golden-kubernetes-role",
+      "suite": "public",
+      "prompt": "Explain what Kubernetes does for containerized applications in three sentences.",
+      "reference_answer": "Kubernetes orchestrates containerized workloads across a cluster. It schedules pods onto nodes, restarts failed workloads, and supports rolling updates. It helps applications stay available and manageable at scale.",
+      "expected_keywords": ["kubernetes", "container", "orchestration", "cluster"],
+      "minimum_response_chars": 140
+    },
+    {
+      "id": "golden-mlflow-tracking",
+      "suite": "public",
+      "prompt": "Describe what MLflow tracks during a machine learning run.",
+      "reference_answer": "MLflow records parameters, metrics, tags, and artifacts for each run. It helps compare experiments, inspect model outputs, and trace how a result was produced.",
+      "expected_keywords": ["mlflow", "metrics", "artifacts", "parameters", "experiments"],
+      "minimum_response_chars": 140
+    },
+    {
+      "id": "golden-minio-artifacts",
+      "suite": "domain",
+      "prompt": "Why is MinIO part of this platform, and what does it store?",
+      "reference_answer": "MinIO provides S3-compatible object storage for the platform. It stores artifacts such as checkpoints, training summaries, scorecards, and model-card outputs used by MLflow and pipeline runs.",
+      "expected_keywords": ["minio", "s3", "artifact", "storage", "checkpoints"],
+      "minimum_response_chars": 150
+    },
+    {
+      "id": "golden-cpt-objective",
+      "suite": "domain",
+      "prompt": "What is continued pretraining, and how is it different from instruction tuning?",
+      "reference_answer": "Continued pretraining keeps training a base language model on additional raw text with the next-token prediction objective. Instruction tuning instead learns from prompt-response examples to follow tasks or instructions more directly.",
+      "expected_keywords": ["continued pretraining", "raw text", "next-token", "instruction tuning"],
+      "minimum_response_chars": 170
+    },
+    {
+      "id": "golden-held-out-splits",
+      "suite": "domain",
+      "prompt": "Why should a continued pretraining corpus be split into train, eval, and test sets?",
+      "reference_answer": "The training split is used for optimization, the eval or validation split is used for model selection during training, and the test split is reserved for final held-out assessment. This separation reduces leakage and makes reported metrics more trustworthy.",
+      "expected_keywords": ["train", "eval", "validation", "test", "held-out"],
+      "minimum_response_chars": 170
+    },
+    {
+      "id": "golden-endpoint-eval",
+      "suite": "domain",
+      "prompt": "Why is it useful to evaluate a served inference endpoint instead of only evaluating model files offline?",
+      "reference_answer": "Endpoint evaluation validates both model quality and serving behavior. It checks that the deployed container can load the model, accept requests, return correct responses, and meet operational expectations such as stability and latency.",
+      "expected_keywords": ["endpoint", "serving", "model", "requests", "responses"],
+      "minimum_response_chars": 170
+    }
+  ]
+}

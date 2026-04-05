@@ -3,8 +3,17 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
+from pathlib import Path
 
 from kfp import Client
+
+if __package__ in {None, ""}:
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+from scripts.pipelines.kfp_local_compat import apply_local_k8s_workaround, local_ui_metadata_note
 
 
 DEFAULT_PIPELINE = "pipelines/evaluation/compiled/evaluation_pipeline.yaml"
@@ -44,7 +53,11 @@ def main() -> None:
         experiment_id=experiment.experiment_id,
     )
 
+    workflow_name = apply_local_k8s_workaround(run.run_id)
     print(f"Evaluation run submitted: {run.run_id}")
+    if workflow_name:
+        print(f"Workflow: {workflow_name}")
+        print(local_ui_metadata_note())
 
 
 if __name__ == "__main__":

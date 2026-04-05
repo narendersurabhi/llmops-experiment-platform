@@ -8,6 +8,11 @@ This file tracks repository changes and current status so future agents can quic
 - Implemented decoupled training and evaluation simulation components with MLflow logging.
 - Implemented KFP v2 pipelines for training and evaluation.
 - Added Dockerfiles for base, trainer, evaluator images.
+- Updated KFP pipelines to execute helper steps on the custom base image and training/evaluation workloads on custom trainer/evaluator containers.
+- Added MinIO bucket bootstrap and a concrete standalone Kubeflow Pipelines installation path for Kubernetes deployment.
+- Switched local default image tags to `:dev` for Docker Desktop Kubernetes and added a custom MLflow image with PostgreSQL driver support.
+- Updated standalone KFP install defaults for Docker Desktop arm64 to disable `proxy-agent` and `metadata-writer`, which can fail on missing arm64 image variants.
+- Added a local KFP submission workaround that patches generated Workflow specs to remove `runAsNonRoot` from Argo-managed pod specs on Docker Desktop, avoiding `CreateContainerConfigError` for `argoexec`.
 - Added Kubernetes manifests for namespace, PostgreSQL, MinIO, and MLflow.
 - Added JSON schemas for dataset/run/eval/scorecard contracts.
 - Added helper scripts for pipeline compilation and infra deployment.
@@ -52,6 +57,16 @@ This file tracks repository changes and current status so future agents can quic
   - MLflow port-forward
   - KFP training/evaluation run submission with parameterized make targets
 - Updated `README.md` to use `make` commands for local deployment/build/compile/run tasks.
+- Updated the training and evaluation pipelines to compile against `llmops/base:latest`, `llmops/trainer:latest`, and `llmops/evaluator:latest` by default, with MLflow runtime env injection for cluster execution.
+- Added deployment helpers:
+  - `scripts/deploy/bootstrap_minio_bucket.sh`
+  - `scripts/deploy/install_kubeflow_pipelines.sh`
+- Updated infra apply flow to wait for services and bootstrap the `mlflow-artifacts` MinIO bucket automatically.
+- Updated the Kubeflow integration docs and make targets to use standalone KFP with `KFP_HOST=http://localhost:3000`.
+- Updated infra images:
+  - PostgreSQL uses `postgres:15-alpine`
+  - MLflow uses `llmops/mlflow:dev`
+- Added `docker/mlflow/Dockerfile` to install `psycopg2-binary` and `boto3` into the MLflow server image.
 - Documented UI capability boundaries:
   - MLflow UI for experiment tracking/inspection
   - Kubeflow UI for runtime parameter configuration and run launch

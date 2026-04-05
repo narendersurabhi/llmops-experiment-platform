@@ -1,0 +1,13 @@
+{
+  "dataset_name": "qwen2-5-0-5b-public-cpt-3000",
+  "dataset_version": "public-cpt-3000-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "fineweb-edu+arxiv",
+  "language": "en",
+  "splits": {
+    "train": "cpt/qwen2_5_0_5b_public/train.jsonl",
+    "eval": "cpt/qwen2_5_0_5b_public/eval.jsonl",
+    "test": "cpt/qwen2_5_0_5b_public/test.jsonl"
+  }
+}

@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: qwen-inference
+  namespace: llmops
+  labels:
+    app: qwen-inference
+    llmops.component: inference
+    llmops.role: baseline
+spec:
+  selector:
+    app: qwen-baseline
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qwen-candidate
+  namespace: llmops
+  labels:
+    app: qwen-candidate
+spec:
+  selector:
+    app: qwen-candidate
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qwen-candidate
+  namespace: llmops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qwen-candidate
+  template:
+    metadata:
+      labels:
+        app: qwen-candidate
+    spec:
+      containers:
+        - name: qwen-candidate
+          image: llmops/qwen-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: QWEN_MODEL_ID
+              value: Qwen/Qwen2.5-0.5B-Instruct
+            - name: QWEN_DEFAULT_MAX_NEW_TOKENS
+              value: "192"
+            - name: QWEN_DEFAULT_TEMPERATURE
+              value: "0.2"
+            - name: QWEN_TORCH_THREADS
+              value: "2"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 180
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "3Gi"
+            limits:
+              memory: "8Gi"
+          volumeMounts:
+            - name: qwen-model-cache
+              mountPath: /models
+      volumes:
+        - name: qwen-model-cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qwen-baseline
+  namespace: llmops
+  labels:
+    app: qwen-baseline
+spec:
+  selector:
+    app: qwen-baseline
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qwen-baseline
+  namespace: llmops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qwen-baseline
+  template:
+    metadata:
+      labels:
+        app: qwen-baseline
+    spec:
+      containers:
+        - name: qwen-baseline
+          image: llmops/qwen-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: QWEN_MODEL_ID
+              value: Qwen/Qwen2.5-0.5B
+            - name: QWEN_DEFAULT_MAX_NEW_TOKENS
+              value: "192"
+            - name: QWEN_DEFAULT_TEMPERATURE
+              value: "0.2"
+            - name: QWEN_TORCH_THREADS
+              value: "2"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 180
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "3Gi"
+            limits:
+              memory: "8Gi"
+          volumeMounts:
+            - name: qwen-model-cache
+              mountPath: /models
+      volumes:
+        - name: qwen-model-cache
+          emptyDir: {}

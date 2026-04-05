@@ -1,0 +1,17 @@
+{
+  "project": "llmops-local",
+  "config_version": "train-smoke-qwen2-5-0-5b-v1",
+  "run_id": "train-smoke-qwen2-5-0-5b-001",
+  "training_backend": "continued_pretraining",
+  "base_model_id": "Qwen/Qwen2.5-0.5B",
+  "tokenizer_name": "Qwen/Qwen2.5-0.5B",
+  "epochs": 1,
+  "batch_size": 1,
+  "learning_rate": 0.00002,
+  "block_size": 64,
+  "gradient_accumulation_steps": 2,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.0,
+  "max_grad_norm": 1.0,
+  "seed": 42
+}

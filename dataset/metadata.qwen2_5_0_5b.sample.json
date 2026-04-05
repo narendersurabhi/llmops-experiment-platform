@@ -1,0 +1,13 @@
+{
+  "dataset_name": "qwen2-5-0-5b-llmops-cpt-starter",
+  "dataset_version": "qwen2-5-0-5b-cpt-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "repo-starter-corpus",
+  "language": "en",
+  "splits": {
+    "train": "cpt/qwen2_5_0_5b/train.jsonl",
+    "validation": "cpt/qwen2_5_0_5b/eval.jsonl",
+    "test": "cpt/qwen2_5_0_5b/test.jsonl"
+  }
+}

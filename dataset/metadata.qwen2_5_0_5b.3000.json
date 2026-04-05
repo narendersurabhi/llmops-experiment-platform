@@ -1,0 +1,13 @@
+{
+  "dataset_name": "qwen2-5-0-5b-llmops-cpt-3000",
+  "dataset_version": "qwen2-5-0-5b-cpt-3000-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "llmops-generated-corpus",
+  "language": "en",
+  "splits": {
+    "train": "cpt/qwen2_5_0_5b_3000/train.jsonl",
+    "eval": "cpt/qwen2_5_0_5b_3000/eval.jsonl",
+    "test": "cpt/qwen2_5_0_5b_3000/test.jsonl"
+  }
+}

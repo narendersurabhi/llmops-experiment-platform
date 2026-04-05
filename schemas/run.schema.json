@@ -1,14 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["project", "config_version", "run_id", "epochs"],
+  "required": ["project", "config_version", "run_id", "training_backend", "epochs"],
   "properties": {
     "project": {"type": "string"},
     "config_version": {"type": "string"},
     "run_id": {"type": "string"},
+    "training_backend": {
+      "type": "string",
+      "enum": ["continued_pretraining", "simulation"]
+    },
+    "base_model_id": {"type": "string"},
+    "tokenizer_name": {"type": "string"},
     "epochs": {"type": "integer", "minimum": 1},
     "batch_size": {"type": "integer", "minimum": 1},
     "learning_rate": {"type": "number", "exclusiveMinimum": 0},
-    "tokenizer": {"type": "string"}
+    "block_size": {"type": "integer", "minimum": 8},
+    "gradient_accumulation_steps": {"type": "integer", "minimum": 1},
+    "weight_decay": {"type": "number", "minimum": 0},
+    "warmup_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "max_grad_norm": {"type": "number", "exclusiveMinimum": 0},
+    "seed": {"type": "integer"}
   }
 }

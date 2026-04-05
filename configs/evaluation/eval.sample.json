@@ -1,7 +1,48 @@
 {
   "project": "llmops-local",
-  "config_version": "eval-v1",
+  "config_version": "eval-v3",
   "run_id": "eval-local-001",
   "dataset_version": "dataset-v1",
-  "baseline_overall_score": 1.0
+  "evaluation_mode": "compare",
+  "baseline_overall_score": 1.0,
+  "evaluation_backend": "qwen_service",
+  "candidate_inference_endpoint": "http://qwen-candidate.llmops.svc.cluster.local:8000/v1/generate",
+  "baseline_inference_endpoint": "http://qwen-baseline.llmops.svc.cluster.local:8000/v1/generate",
+  "judge_model_id": "comparison-run",
+  "publish_model_cards": true,
+  "minimum_delta_vs_baseline": 0.0,
+  "inference_batch_size": 4,
+  "max_new_tokens": 192,
+  "temperature": 0.2,
+  "request_timeout_seconds": 120,
+  "benchmark_prompts": [
+    {
+      "id": "public-kubernetes",
+      "suite": "public",
+      "prompt": "Explain what Kubernetes does for containerized applications in three sentences.",
+      "expected_keywords": ["kubernetes", "container", "orchestration"],
+      "minimum_response_chars": 120
+    },
+    {
+      "id": "public-mlflow",
+      "suite": "public",
+      "prompt": "Describe what MLflow tracks during an ML experiment run.",
+      "expected_keywords": ["mlflow", "metrics", "artifacts", "experiments"],
+      "minimum_response_chars": 110
+    },
+    {
+      "id": "domain-kubeflow-mlflow",
+      "suite": "domain",
+      "prompt": "In this repository, explain how Kubeflow Pipelines and MLflow work together during evaluation.",
+      "expected_keywords": ["kubeflow", "mlflow", "pipeline", "artifacts"],
+      "minimum_response_chars": 130
+    },
+    {
+      "id": "domain-minio",
+      "suite": "domain",
+      "prompt": "Explain why MinIO is part of this platform and what it stores.",
+      "expected_keywords": ["minio", "artifact", "s3", "storage"],
+      "minimum_response_chars": 110
+    }
+  ]
 }

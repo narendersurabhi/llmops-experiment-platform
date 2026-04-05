@@ -1,0 +1,18 @@
+{
+  "project": "llmops-local",
+  "config_version": "eval-single-public-cpt-v1",
+  "run_id": "eval-qwen2-5-0-5b-public-cpt-001",
+  "dataset_version": "public-cpt-3000-v1",
+  "evaluation_mode": "single_model",
+  "evaluation_backend": "cpt_model",
+  "dataset_metadata_path": "dataset/metadata.qwen2_5_0_5b.public.json",
+  "publish_model_cards": true,
+  "block_size": 128,
+  "eval_batch_size": 1,
+  "completion_split": "test",
+  "completion_sample_count": 8,
+  "completion_prompt_tokens": 48,
+  "completion_reference_tokens": 64,
+  "max_new_tokens": 64,
+  "temperature": 0.0
+}

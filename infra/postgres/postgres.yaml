@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15
+          image: postgres:15-alpine
+          imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_DB
               value: mlflow

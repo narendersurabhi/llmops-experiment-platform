@@ -1,0 +1,2 @@
+{"id":"eval-001","text":"Validation loss indicates whether continued pretraining is improving the model on held-out text.","source":"llmops-smoke","language":"en","split":"eval"}
+{"id":"eval-002","text":"Perplexity is commonly derived from validation loss when evaluating causal language modeling runs.","source":"llmops-smoke","language":"en","split":"eval"}

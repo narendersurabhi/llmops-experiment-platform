@@ -1,0 +1,2 @@
+{"text":"Continued pretraining adapts a base language model to a new corpus with next-token prediction on raw text.","source":"llmops-docs","language":"en"}
+{"text":"Validation loss and perplexity are the primary holdout metrics for causal language modeling.","source":"llmops-docs","language":"en"}

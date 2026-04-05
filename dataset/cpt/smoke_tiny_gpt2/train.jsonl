@@ -1,0 +1,5 @@
+{"id":"train-001","text":"Continued pretraining extends a base language model with next-token prediction on a domain corpus.","source":"llmops-smoke","language":"en","split":"train"}
+{"id":"train-002","text":"Kubeflow Pipelines can orchestrate data validation, training, and evaluation steps in a repeatable workflow.","source":"llmops-smoke","language":"en","split":"train"}
+{"id":"train-003","text":"MLflow records parameters, metrics, and artifacts so small smoke runs can be inspected before larger experiments.","source":"llmops-smoke","language":"en","split":"train"}
+{"id":"train-004","text":"A tiny GPT-2 checkpoint is useful for smoke testing the training loop on a laptop before switching to a larger model.","source":"llmops-smoke","language":"en","split":"train"}
+{"id":"train-005","text":"Gradient accumulation can simulate a larger effective batch size while keeping peak memory lower on local hardware.","source":"llmops-smoke","language":"en","split":"train"}

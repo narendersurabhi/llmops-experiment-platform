@@ -1,9 +1,37 @@
-from __future__ import annotations
+import os
+from pathlib import Path
 
 from kfp import compiler, dsl
-from kfp.dsl import Artifact, Output
+from kfp.dsl import Artifact, Input, Output
 
-BASE_IMAGE = "python:3.11-slim"
+BASE_IMAGE = os.getenv("LLMOPS_BASE_IMAGE", "llmops/base:dev")
+EVALUATOR_IMAGE = os.getenv("LLMOPS_EVALUATOR_IMAGE", "llmops/evaluator:dev")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow.llmops.svc.cluster.local:5000")
+MLFLOW_S3_ENDPOINT_URL = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://minio.llmops.svc.cluster.local:9000")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+QWEN_INFERENCE_URL = os.getenv("QWEN_INFERENCE_URL", "http://qwen-inference.llmops.svc.cluster.local:8000/v1/generate")
+QWEN_CANDIDATE_INFERENCE_URL = os.getenv(
+    "QWEN_CANDIDATE_INFERENCE_URL",
+    "http://qwen-candidate.llmops.svc.cluster.local:8000/v1/generate",
+)
+QWEN_BASELINE_INFERENCE_URL = os.getenv(
+    "QWEN_BASELINE_INFERENCE_URL",
+    "http://qwen-baseline.llmops.svc.cluster.local:8000/v1/generate",
+)
+
+
+def set_runtime_env(task):
+    task.set_env_variable(name="MLFLOW_TRACKING_URI", value=MLFLOW_TRACKING_URI)
+    task.set_env_variable(name="MLFLOW_S3_ENDPOINT_URL", value=MLFLOW_S3_ENDPOINT_URL)
+    task.set_env_variable(name="AWS_ACCESS_KEY_ID", value=AWS_ACCESS_KEY_ID)
+    task.set_env_variable(name="AWS_SECRET_ACCESS_KEY", value=AWS_SECRET_ACCESS_KEY)
+    task.set_env_variable(name="AWS_DEFAULT_REGION", value=AWS_DEFAULT_REGION)
+    task.set_env_variable(name="QWEN_INFERENCE_URL", value=QWEN_INFERENCE_URL)
+    task.set_env_variable(name="QWEN_CANDIDATE_INFERENCE_URL", value=QWEN_CANDIDATE_INFERENCE_URL)
+    task.set_env_variable(name="QWEN_BASELINE_INFERENCE_URL", value=QWEN_BASELINE_INFERENCE_URL)
+    return task
 
 
 @dsl.component(base_image=BASE_IMAGE)
@@ -13,87 +41,41 @@ def resolve_eval_config_op(eval_config_path: str, resolved_eval_config: Output[A
     Path(resolved_eval_config.path).write_text(Path(eval_config_path).read_text(encoding="utf-8"), encoding="utf-8")
 
 
-@dsl.component(base_image=BASE_IMAGE)
-def load_models_op(candidate_model_uri: str, baseline_model_uri: str, model_info: Output[Artifact]):
-    import json
-    from pathlib import Path
-
-    Path(model_info.path).write_text(
-        json.dumps({"candidate": candidate_model_uri, "baseline": baseline_model_uri}),
-        encoding="utf-8",
-    )
-
-
-@dsl.component(base_image=BASE_IMAGE, packages_to_install=["mlflow", "boto3"])
+@dsl.container_component
 def evaluate_and_log_op(
-    resolved_eval_config: Artifact,
-    model_info: Artifact,
+    resolved_eval_config: Input[Artifact],
+    candidate_model_uri: str,
+    baseline_model_uri: str,
     scorecard: Output[Artifact],
 ):
-    import json
-    import os
-    import random
-    from pathlib import Path
-
-    import mlflow
-
-    cfg = json.loads(Path(resolved_eval_config.path).read_text(encoding="utf-8"))
-    models = json.loads(Path(model_info.path).read_text(encoding="utf-8"))
-
-    intrinsic_perplexity = round(random.uniform(8.0, 25.0), 3)
-    public_score = round(random.uniform(0.45, 0.82), 3)
-    domain_score = round(random.uniform(0.50, 0.90), 3)
-    overall = round((1 / intrinsic_perplexity) * 10 + public_score * 0.45 + domain_score * 0.45, 3)
-    baseline_overall = float(cfg.get("baseline_overall_score", 1.0))
-    delta = round(overall - baseline_overall, 3)
-
-    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow.llmops.svc.cluster.local:5000")
-    mlflow.set_tracking_uri(tracking_uri)
-    mlflow.set_experiment(f"llmops-evaluation-{cfg.get('project', 'default')}")
-
-    tags = {
-        "dataset_version": str(cfg.get("dataset_version", "unknown")),
-        "config_version": str(cfg.get("config_version", "v1")),
-        "pipeline_type": "evaluation",
-        "run_id": str(cfg.get("run_id", "kfp-eval-local")),
-    }
-
-    with mlflow.start_run(tags=tags):
-        mlflow.log_params({
-            "candidate_model_uri": models["candidate"],
-            "baseline_model_uri": models["baseline"],
-            "project": cfg.get("project", "default"),
-        })
-        mlflow.log_metric("intrinsic_perplexity", intrinsic_perplexity)
-        mlflow.log_metric("public_benchmark_score", public_score)
-        mlflow.log_metric("domain_benchmark_score", domain_score)
-        mlflow.log_metric("overall_score", overall)
-        mlflow.log_metric("delta_vs_baseline", delta)
-
-        out = {
-            "candidate_model_uri": models["candidate"],
-            "baseline_model_uri": models["baseline"],
-            "intrinsic_perplexity": intrinsic_perplexity,
-            "public_benchmark_score": public_score,
-            "domain_benchmark_score": domain_score,
-            "overall_score": overall,
-            "baseline_overall_score": baseline_overall,
-            "delta_vs_baseline": delta,
-            "result": "pass" if delta >= 0 else "fail",
-        }
-        Path(scorecard.path).write_text(json.dumps(out), encoding="utf-8")
-        mlflow.log_artifact(scorecard.path, artifact_path="scorecards")
+    return dsl.ContainerSpec(
+        image=EVALUATOR_IMAGE,
+        command=["python", "-m", "components.evaluator.run_evaluation"],
+        args=[
+            "--eval-config-path",
+            resolved_eval_config.path,
+            "--candidate-model-uri",
+            candidate_model_uri,
+            "--baseline-model-uri",
+            baseline_model_uri,
+            "--scorecard-output-path",
+            scorecard.path,
+        ],
+    )
 
 
 @dsl.pipeline(name="llmops-evaluation-pipeline")
 def evaluation_pipeline(eval_config_path: str, candidate_model_uri: str, baseline_model_uri: str):
     cfg = resolve_eval_config_op(eval_config_path=eval_config_path)
-    models = load_models_op(candidate_model_uri=candidate_model_uri, baseline_model_uri=baseline_model_uri)
-    _ = evaluate_and_log_op(
-        resolved_eval_config=cfg.outputs["resolved_eval_config"],
-        model_info=models.outputs["model_info"],
+    _ = set_runtime_env(
+        evaluate_and_log_op(
+            resolved_eval_config=cfg.outputs["resolved_eval_config"],
+            candidate_model_uri=candidate_model_uri,
+            baseline_model_uri=baseline_model_uri,
+        )
     )
 
 
 if __name__ == "__main__":
+    Path("pipelines/evaluation/compiled").mkdir(parents=True, exist_ok=True)
     compiler.Compiler().compile(evaluation_pipeline, "pipelines/evaluation/compiled/evaluation_pipeline.yaml")

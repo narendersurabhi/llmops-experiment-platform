@@ -1,0 +1,4 @@
+{"id":"eval-001","text":"Perplexity is derived from held-out loss and is commonly used to measure next-token prediction quality for continued pretraining.","source":"llmops-starter","language":"en","domain":"cpt"}
+{"id":"eval-002","text":"Model cards should record the evaluated model URI, the inference endpoint, and the benchmark results used to generate the scorecard.","source":"llmops-starter","language":"en","domain":"evaluation"}
+{"id":"eval-003","text":"A local single-model evaluation can start a FastAPI inference server, query it with a golden set, and write scorecard plus model-card artifacts to disk.","source":"llmops-starter","language":"en","domain":"local-eval"}
+{"id":"eval-004","text":"Object storage is necessary because evaluation artifacts and training summaries are larger and more durable than inline pipeline parameters.","source":"llmops-starter","language":"en","domain":"platform"}

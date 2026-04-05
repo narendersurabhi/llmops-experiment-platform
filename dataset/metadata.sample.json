@@ -1,6 +1,13 @@
 {
-  "dataset_name": "toy-instruction-set",
-  "dataset_version": "dataset-v1",
-  "num_samples": 1000,
-  "source": "local-simulated"
+  "dataset_name": "llmops-cpt-sample",
+  "dataset_version": "dataset-v2",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "local-cpt-sample",
+  "language": "en",
+  "splits": {
+    "train": "cpt/train.sample.jsonl",
+    "validation": "cpt/validation.sample.jsonl",
+    "test": "cpt/test.sample.jsonl"
+  }
 }

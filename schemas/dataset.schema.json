@@ -1,11 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["dataset_name", "dataset_version", "num_samples"],
+  "required": ["dataset_name", "dataset_version", "format", "text_field", "splits"],
   "properties": {
     "dataset_name": {"type": "string"},
     "dataset_version": {"type": "string"},
-    "num_samples": {"type": "integer", "minimum": 1},
-    "source": {"type": "string"}
+    "format": {
+      "type": "string",
+      "enum": ["jsonl"]
+    },
+    "text_field": {"type": "string"},
+    "source": {"type": "string"},
+    "language": {"type": "string"},
+    "splits": {
+      "type": "object",
+      "required": ["train", "test"],
+      "anyOf": [
+        {"required": ["validation"]},
+        {"required": ["eval"]}
+      ],
+      "properties": {
+        "train": {"type": "string"},
+        "validation": {"type": "string"},
+        "eval": {"type": "string"},
+        "test": {"type": "string"}
+      }
+    }
   }
 }

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import os
 import random
 from pathlib import Path
 
@@ -18,12 +17,35 @@ def simulate_losses(epoch: int) -> tuple[float, float]:
     return round(train_loss, 4), round(val_loss, 4)
 
 
-def run(config_path: str, dataset_metadata_path: str, output_dir: str) -> str:
+def resolve_output_paths(output_dir: str | None, summary_output_path: str | None) -> tuple[Path, Path]:
+    if output_dir is None and summary_output_path is None:
+        raise ValueError("Either output_dir or summary_output_path is required.")
+
+    if summary_output_path is not None:
+        summary_path = Path(summary_output_path)
+        resolved_output_dir = summary_path.parent
+    else:
+        resolved_output_dir = Path(output_dir)
+        summary_path = resolved_output_dir / "training_summary.json"
+
+    if output_dir is not None and Path(output_dir) != resolved_output_dir:
+        raise ValueError("output_dir must match the parent directory of summary_output_path.")
+
+    return resolved_output_dir, summary_path
+
+
+def run(
+    config_path: str,
+    dataset_metadata_path: str,
+    output_dir: str | None = None,
+    summary_output_path: str | None = None,
+) -> str:
     cfg = read_json(config_path)
     ds = read_json(dataset_metadata_path)
+    resolved_output_dir, summary_path = resolve_output_paths(output_dir, summary_output_path)
 
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    checkpoints_dir = Path(output_dir) / "checkpoints"
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+    checkpoints_dir = resolved_output_dir / "checkpoints"
     checkpoints_dir.mkdir(exist_ok=True)
 
     tags = {
@@ -75,25 +97,32 @@ def run(config_path: str, dataset_metadata_path: str, output_dir: str) -> str:
                 best_val = val_loss
                 best_ckpt = str(ckpt)
 
-        summary_path = str(Path(output_dir) / "training_summary.json")
+        summary_path_str = str(summary_path)
         write_json(
-            summary_path,
+            summary_path_str,
             {
                 "best_checkpoint": best_ckpt,
                 "best_val_loss": best_val,
                 "metrics": metrics,
             },
         )
-        mlflow.log_artifact(summary_path, artifact_path="summaries")
+        mlflow.log_artifact(summary_path_str, artifact_path="summaries")
 
-    return summary_path
+    return summary_path_str
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-path", required=True)
     parser.add_argument("--dataset-metadata-path", required=True)
-    parser.add_argument("--output-dir", required=True)
+    output_group = parser.add_mutually_exclusive_group(required=True)
+    output_group.add_argument("--output-dir")
+    output_group.add_argument("--summary-output-path")
     args = parser.parse_args()
-    result = run(args.config_path, args.dataset_metadata_path, args.output_dir)
+    result = run(
+        args.config_path,
+        args.dataset_metadata_path,
+        output_dir=args.output_dir,
+        summary_output_path=args.summary_output_path,
+    )
     print(result)

@@ -10,9 +10,33 @@ from components.utils.io_utils import read_json, write_json
 from components.utils.mlflow_utils import start_run
 
 
-def run(eval_config_path: str, candidate_model_uri: str, baseline_model_uri: str, output_dir: str) -> str:
+def resolve_output_paths(output_dir: str | None, scorecard_output_path: str | None) -> tuple[Path, Path]:
+    if output_dir is None and scorecard_output_path is None:
+        raise ValueError("Either output_dir or scorecard_output_path is required.")
+
+    if scorecard_output_path is not None:
+        scorecard_path = Path(scorecard_output_path)
+        resolved_output_dir = scorecard_path.parent
+    else:
+        resolved_output_dir = Path(output_dir)
+        scorecard_path = resolved_output_dir / "scorecard.json"
+
+    if output_dir is not None and Path(output_dir) != resolved_output_dir:
+        raise ValueError("output_dir must match the parent directory of scorecard_output_path.")
+
+    return resolved_output_dir, scorecard_path
+
+
+def run(
+    eval_config_path: str,
+    candidate_model_uri: str,
+    baseline_model_uri: str,
+    output_dir: str | None = None,
+    scorecard_output_path: str | None = None,
+) -> str:
     cfg = read_json(eval_config_path)
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    resolved_output_dir, scorecard_path = resolve_output_paths(output_dir, scorecard_output_path)
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
 
     intrinsic_perplexity = round(random.uniform(8.0, 25.0), 3)
     public_score = round(random.uniform(0.45, 0.82), 3)
@@ -30,7 +54,6 @@ def run(eval_config_path: str, candidate_model_uri: str, baseline_model_uri: str
     }
     experiment_name = f"llmops-evaluation-{cfg.get('project', 'default')}"
 
-    scorecard_path = str(Path(output_dir) / "scorecard.json")
     scorecard = {
         "candidate_model_uri": candidate_model_uri,
         "baseline_model_uri": baseline_model_uri,
@@ -57,10 +80,11 @@ def run(eval_config_path: str, candidate_model_uri: str, baseline_model_uri: str
         mlflow.log_metric("overall_score", overall)
         mlflow.log_metric("delta_vs_baseline", delta)
 
-        write_json(scorecard_path, scorecard)
-        mlflow.log_artifact(scorecard_path, artifact_path="scorecards")
+        scorecard_path_str = str(scorecard_path)
+        write_json(scorecard_path_str, scorecard)
+        mlflow.log_artifact(scorecard_path_str, artifact_path="scorecards")
 
-    return scorecard_path
+    return scorecard_path_str
 
 
 if __name__ == "__main__":
@@ -68,7 +92,15 @@ if __name__ == "__main__":
     parser.add_argument("--eval-config-path", required=True)
     parser.add_argument("--candidate-model-uri", required=True)
     parser.add_argument("--baseline-model-uri", required=True)
-    parser.add_argument("--output-dir", required=True)
+    output_group = parser.add_mutually_exclusive_group(required=True)
+    output_group.add_argument("--output-dir")
+    output_group.add_argument("--scorecard-output-path")
     args = parser.parse_args()
-    result = run(args.eval_config_path, args.candidate_model_uri, args.baseline_model_uri, args.output_dir)
+    result = run(
+        args.eval_config_path,
+        args.candidate_model_uri,
+        args.baseline_model_uri,
+        output_dir=args.output_dir,
+        scorecard_output_path=args.scorecard_output_path,
+    )
     print(result)

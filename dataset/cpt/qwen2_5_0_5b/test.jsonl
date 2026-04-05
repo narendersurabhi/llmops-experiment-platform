@@ -1,0 +1,4 @@
+{"id":"test-001","text":"The strongest continued pretraining workflows preserve a clean separation between raw-text training data and prompt-based evaluation data.","source":"llmops-starter","language":"en","domain":"cpt"}
+{"id":"test-002","text":"If a candidate model outperforms the baseline on the golden set, the deployment flow can promote the candidate endpoint into the stable baseline role.","source":"llmops-starter","language":"en","domain":"evaluation"}
+{"id":"test-003","text":"Running evaluation against the real served endpoint verifies model loading, request handling, and text quality at the same time.","source":"llmops-starter","language":"en","domain":"serving"}
+{"id":"test-004","text":"A good golden set mixes public concepts with domain-specific prompts so a model is tested for both general correctness and repository-specific knowledge.","source":"llmops-starter","language":"en","domain":"evaluation"}

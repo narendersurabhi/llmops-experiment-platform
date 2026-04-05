@@ -1,0 +1,13 @@
+{
+  "dataset_name": "smoke-tiny-gpt2-cpt-5",
+  "dataset_version": "smoke-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "repo-smoke-corpus",
+  "language": "en",
+  "splits": {
+    "train": "cpt/smoke_tiny_gpt2/train.jsonl",
+    "eval": "cpt/smoke_tiny_gpt2/eval.jsonl",
+    "test": "cpt/smoke_tiny_gpt2/test.jsonl"
+  }
+}
