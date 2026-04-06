@@ -1,9 +1,12 @@
+import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
 
 pytest.importorskip("mlflow")
-from components.evaluator.run_evaluation import BatchEndpointUnavailable, run
+from components.evaluator.run_evaluation import BatchEndpointUnavailable, load_cpt_model_and_tokenizer, run
 from components.evaluator.run_single_model_evaluation import run as run_single_model
 
 
@@ -246,6 +249,79 @@ def test_single_model_evaluation_falls_back_when_batch_endpoint_is_unavailable(
 
     assert len(single_calls) == 2
     assert '"served_model_id": "fallback-model"' in payload
+
+
+def test_load_cpt_model_and_tokenizer_supports_local_lora_adapter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    adapter_dir = tmp_path / "adapter-model"
+    adapter_dir.mkdir()
+    (adapter_dir / "adapter_config.json").write_text("{}", encoding="utf-8")
+
+    calls: list[tuple[str, str]] = []
+
+    class DummyTokenizer:
+        pad_token_id = None
+        eos_token = "</s>"
+        padding_side = "right"
+
+    class DummyModel:
+        def __init__(self):
+            self.device = None
+            self.eval_called = False
+
+        def to(self, device):
+            self.device = device
+            return self
+
+        def eval(self):
+            self.eval_called = True
+            return self
+
+    def fake_tokenizer_from_pretrained(source: str):
+        calls.append(("tokenizer", source))
+        return DummyTokenizer()
+
+    def fake_model_from_pretrained(source: str):
+        calls.append(("base_model", source))
+        return DummyModel()
+
+    class DummyPeftConfig:
+        base_model_name_or_path = "Qwen/Qwen2.5-0.5B"
+
+        @staticmethod
+        def from_pretrained(source: str):
+            calls.append(("peft_config", source))
+            return DummyPeftConfig()
+
+    class DummyPeftModel:
+        @staticmethod
+        def from_pretrained(model, source: str):
+            calls.append(("peft_model", source))
+            return model
+
+    transformers_stub = types.SimpleNamespace(
+        AutoTokenizer=types.SimpleNamespace(from_pretrained=fake_tokenizer_from_pretrained),
+        AutoModelForCausalLM=types.SimpleNamespace(from_pretrained=fake_model_from_pretrained),
+    )
+    peft_stub = types.SimpleNamespace(PeftConfig=DummyPeftConfig, PeftModel=DummyPeftModel)
+
+    monkeypatch.setitem(sys.modules, "transformers", transformers_stub)
+    monkeypatch.setitem(sys.modules, "peft", peft_stub)
+    monkeypatch.setattr("components.evaluator.run_evaluation.resolve_local_torch_device", lambda: "cpu")
+
+    tokenizer, model, model_source, resolved_device = load_cpt_model_and_tokenizer(f"file://{adapter_dir}")
+
+    assert tokenizer.pad_token_id is None
+    assert tokenizer.padding_side == "left"
+    assert model_source == str(adapter_dir)
+    assert resolved_device == "cpu"
+    assert model.device == "cpu"
+    assert model.eval_called is True
+    assert calls == [
+        ("tokenizer", str(adapter_dir)),
+        ("peft_config", str(adapter_dir)),
+        ("base_model", "Qwen/Qwen2.5-0.5B"),
+        ("peft_model", str(adapter_dir)),
+    ]
 
 
 def test_single_model_cpt_evaluation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

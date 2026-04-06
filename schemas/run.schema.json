@@ -10,6 +10,10 @@
       "type": "string",
       "enum": ["continued_pretraining", "simulation"]
     },
+    "adaptation_method": {
+      "type": "string",
+      "enum": ["full", "lora"]
+    },
     "base_model_id": {"type": "string"},
     "tokenizer_name": {"type": "string"},
     "epochs": {"type": "integer", "minimum": 1},
@@ -20,6 +24,18 @@
     "weight_decay": {"type": "number", "minimum": 0},
     "warmup_ratio": {"type": "number", "minimum": 0, "maximum": 1},
     "max_grad_norm": {"type": "number", "exclusiveMinimum": 0},
+    "lora_r": {"type": "integer", "minimum": 1},
+    "lora_alpha": {"type": "integer", "minimum": 1},
+    "lora_dropout": {"type": "number", "minimum": 0, "maximum": 1},
+    "lora_bias": {"type": "string"},
+    "lora_target_modules": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "logging_steps": {"type": "integer", "minimum": 1},
+    "eval_steps": {"type": "integer", "minimum": 1},
+    "save_steps": {"type": "integer", "minimum": 1},
+    "save_total_limit": {"type": "integer", "minimum": 1},
     "seed": {"type": "integer"}
   }
 }

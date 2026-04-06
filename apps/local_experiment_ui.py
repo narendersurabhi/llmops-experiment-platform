@@ -6,9 +6,12 @@ import streamlit as st
 
 from components.ui.file_dialogs import choose_directory_path, choose_file_path
 from components.ui.presets import (
+    DEFAULT_EVALUATION_PRESET_KEY,
     DEFAULT_HF_HOME,
     DEFAULT_TRAINING_PRESET_KEY,
+    EVALUATION_PRESETS,
     TRAINING_PRESETS,
+    evaluation_preset_values,
     training_preset_values,
 )
 from components.ui.local_jobs import (
@@ -29,9 +32,7 @@ st.set_page_config(page_title="LLMOps Local UI", layout="wide")
 
 
 DEFAULT_TRAIN_VALUES = training_preset_values(DEFAULT_TRAINING_PRESET_KEY)
-DEFAULT_EVAL_CONFIG = "configs/evaluation/qwen2_5_0_5b.public.single_model.sample.json"
-DEFAULT_EVAL_MODEL_ID = "Qwen/Qwen2.5-0.5B"
-DEFAULT_EVAL_LOCAL_MODEL = f"{DEFAULT_LOCAL_TRAINING_OUTPUT}/model"
+DEFAULT_EVAL_VALUES = evaluation_preset_values(DEFAULT_EVALUATION_PRESET_KEY)
 DEFAULTS = {
     "training_preset": DEFAULT_TRAINING_PRESET_KEY,
     "training_run_config_path": DEFAULT_TRAIN_VALUES["training_run_config_path"],
@@ -39,13 +40,14 @@ DEFAULTS = {
     "training_output_dir": DEFAULT_TRAIN_VALUES["training_output_dir"],
     "training_hf_home": DEFAULT_TRAIN_VALUES["training_hf_home"],
     "training_mlflow_tracking_uri": "",
-    "evaluation_eval_config_path": DEFAULT_EVAL_CONFIG,
-    "evaluation_model_source": "Saved local model",
-    "evaluation_local_model_path": DEFAULT_EVAL_LOCAL_MODEL,
-    "evaluation_model_id": DEFAULT_EVAL_MODEL_ID,
-    "evaluation_model_uri": "",
-    "evaluation_output_dir": DEFAULT_LOCAL_EVAL_OUTPUT,
-    "evaluation_hf_home": DEFAULT_HF_HOME,
+    "evaluation_preset": DEFAULT_EVALUATION_PRESET_KEY,
+    "evaluation_eval_config_path": DEFAULT_EVAL_VALUES["evaluation_eval_config_path"],
+    "evaluation_model_source": DEFAULT_EVAL_VALUES["evaluation_model_source"],
+    "evaluation_local_model_path": DEFAULT_EVAL_VALUES["evaluation_local_model_path"],
+    "evaluation_model_id": DEFAULT_EVAL_VALUES["evaluation_model_id"],
+    "evaluation_model_uri": DEFAULT_EVAL_VALUES["evaluation_model_uri"],
+    "evaluation_output_dir": DEFAULT_EVAL_VALUES["evaluation_output_dir"],
+    "evaluation_hf_home": DEFAULT_EVAL_VALUES["evaluation_hf_home"],
     "evaluation_device": "auto",
     "evaluation_torch_threads": 2,
     "evaluation_port": 8000,
@@ -66,6 +68,15 @@ def apply_training_preset(preset_key: str) -> None:
 
 def handle_training_preset_change() -> None:
     apply_training_preset(str(st.session_state["training_preset"]))
+
+
+def apply_evaluation_preset(preset_key: str) -> None:
+    for key, value in evaluation_preset_values(preset_key).items():
+        st.session_state[key] = value
+
+
+def handle_evaluation_preset_change() -> None:
+    apply_evaluation_preset(str(st.session_state["evaluation_preset"]))
 
 
 def browse_and_set_path(*, key: str, title: str, directory: bool) -> None:
@@ -166,7 +177,10 @@ training_tab, evaluation_tab = st.tabs(["Training", "Evaluation"])
 
 with training_tab:
     st.subheader("Local Training")
-    st.caption("Choose a preset for a fast smoke run or the full 3000-record local Qwen training run.")
+    st.caption(
+        "Choose a preset for a fast smoke run, the full public corpus, the recent PubMed healthcare corpus, "
+        "the LoRA healthcare preset for smaller local runs, or the q/k/v/o LoRA ablation."
+    )
     render_job_status("training_job")
     st.selectbox(
         "Training preset",
@@ -203,8 +217,15 @@ with training_tab:
 
 with evaluation_tab:
     st.subheader("Local Evaluation")
-    st.caption("Runs the existing local single-model eval flow, including the local inference server.")
+    st.caption("Choose a preset for base-model golden eval, base-model CPT eval, or the saved healthcare LoRA CPT eval.")
     render_job_status("evaluation_job")
+    st.selectbox(
+        "Evaluation preset",
+        options=list(EVALUATION_PRESETS),
+        key="evaluation_preset",
+        on_change=handle_evaluation_preset_change,
+    )
+    st.info(EVALUATION_PRESETS[str(st.session_state["evaluation_preset"])].description)
     render_path_picker("Eval config path", "evaluation_eval_config_path")
     st.radio(
         "Model source",

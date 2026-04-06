@@ -10,6 +10,8 @@ A production-style, local-first LLMOps repository that validates **training** an
 > This repository now supports a **continued pretraining** path for the training pipeline using raw text splits and causal language modeling. The default local sample uses a tiny Hugging Face model for CPU-only validation on Docker Desktop. Real Qwen continued pretraining still needs a proper GPU-backed cluster.
 
 For the end-to-end workflow from base-model evaluation through continued pretraining and post-training re-evaluation, see [docs/base-model-cpt-workflow.md](docs/base-model-cpt-workflow.md).
+For local LoRA guidance for `Qwen/Qwen2.5-0.5B` on a MacBook, see [docs/qwen-lora-macbook.md](docs/qwen-lora-macbook.md).
+For a short explanation of the CPT evaluation metrics used in local scorecards, see [docs/cpt-metrics-glossary.md](docs/cpt-metrics-glossary.md).
 
 ## 1) Architecture Overview
 

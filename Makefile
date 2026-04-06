@@ -1,4 +1,4 @@
-.PHONY: help venv-install venv-install-all test validate-local-data build-public-data pipelines-compile docker-build run-local-ui run-local-training run-local-eval run-local-base-eval base-model-apply baseline-apply candidate-apply promote-candidate inference-apply infra-apply minio-bootstrap infra-apply-kubeflow k8s-status kfp-status mlflow-port-forward kfp-port-forward submit-training submit-evaluation submit-single-evaluation
+.PHONY: help venv-install venv-install-all test validate-local-data build-public-data pipelines-compile docker-build run-local-ui run-local-training run-local-eval run-local-base-eval local-leaderboard base-model-apply baseline-apply candidate-apply promote-candidate inference-apply infra-apply minio-bootstrap infra-apply-kubeflow k8s-status kfp-status mlflow-port-forward kfp-port-forward submit-training submit-evaluation submit-single-evaluation
 
 UV ?= uv
 PYTHON ?= $(CURDIR)/.venv/bin/python
@@ -33,6 +33,7 @@ help:
 	@echo "  make run-local-training [RUN_CONFIG_PATH=...] [DATASET_METADATA_PATH=...] [OUTPUT_DIR=...]"
 	@echo "  make run-local-eval MODEL_ID=... [LOCAL_MODEL_PATH=...] [EVAL_CONFIG_PATH=...] [MODEL_URI=...]"
 	@echo "  make run-local-base-eval    Run base-model eval locally against the public golden set"
+	@echo "  make local-leaderboard      Generate a markdown + CSV leaderboard from local train/eval artifacts"
 	@echo ""
 	@echo "Build:"
 	@echo "  make docker-build           Build base/trainer/evaluator/mlflow/qwen images"
@@ -106,6 +107,12 @@ run-local-eval:
 
 run-local-base-eval:
 	./scripts/local/run_base_model_eval_local.sh
+
+local-leaderboard:
+	PYTHONPATH=. $(UV) run python scripts/local/generate_local_leaderboard.py \
+		$(if $(TRAIN_ROOT),--train-root "$(TRAIN_ROOT)",) \
+		$(if $(EVAL_ROOT),--eval-root "$(EVAL_ROOT)",) \
+		$(if $(OUTPUT_DIR),--output-dir "$(OUTPUT_DIR)",)
 
 docker-build:
 	$(DOCKER) build -f docker/base/Dockerfile -t $(BASE_IMAGE) .

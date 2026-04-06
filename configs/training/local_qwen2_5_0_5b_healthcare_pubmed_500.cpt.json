@@ -1,0 +1,21 @@
+{
+  "project": "llmops-local",
+  "config_version": "train-local-qwen2-5-0-5b-healthcare-pubmed-500-v1",
+  "run_id": "train-local-qwen2-5-0-5b-healthcare-pubmed-500-001",
+  "training_backend": "continued_pretraining",
+  "base_model_id": "Qwen/Qwen2.5-0.5B",
+  "tokenizer_name": "Qwen/Qwen2.5-0.5B",
+  "epochs": 1,
+  "batch_size": 1,
+  "learning_rate": 0.000005,
+  "block_size": 128,
+  "gradient_accumulation_steps": 4,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.03,
+  "max_grad_norm": 1.0,
+  "logging_steps": 25,
+  "eval_steps": 125,
+  "save_steps": 125,
+  "save_total_limit": 4,
+  "seed": 42
+}

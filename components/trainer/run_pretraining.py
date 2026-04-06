@@ -94,22 +94,65 @@ def with_perplexity(metrics: dict[str, Any], prefix: str) -> dict[str, Any]:
     return payload
 
 
+def resolve_adaptation_method(cfg: dict[str, Any]) -> str:
+    return str(cfg.get("adaptation_method", "full")).strip().lower()
+
+
+def infer_lora_target_modules(model) -> list[str]:
+    common_suffixes = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+        "c_attn",
+        "c_proj",
+        "c_fc",
+    ]
+    module_names = {name.split(".")[-1] for name, _ in model.named_modules()}
+    selected = [suffix for suffix in common_suffixes if suffix in module_names]
+    if not selected:
+        raise ValueError(
+            "Could not infer LoRA target modules for this model. "
+            "Provide 'lora_target_modules' explicitly in the training config."
+        )
+    return selected
+
+
+def count_parameters(model) -> tuple[int, int]:
+    total = 0
+    trainable = 0
+    for parameter in model.parameters():
+        numel = int(parameter.numel())
+        total += numel
+        if parameter.requires_grad:
+            trainable += numel
+    return trainable, total
+
+
 def build_training_arguments(cfg: dict[str, Any], output_dir: Path, train_dataset_size: int, training_arguments_cls):
+    per_device_batch_size = max(int(cfg.get("batch_size", 1)), 1)
+    logging_steps = int(cfg.get("logging_steps", max(1, train_dataset_size // per_device_batch_size)))
+    eval_steps = cfg.get("eval_steps")
+    save_steps = cfg.get("save_steps")
+    save_total_limit = int(cfg.get("save_total_limit", 2))
     training_kwargs: dict[str, Any] = {
         "output_dir": str(output_dir),
         "overwrite_output_dir": True,
         "num_train_epochs": float(cfg.get("epochs", 1)),
-        "per_device_train_batch_size": int(cfg.get("batch_size", 1)),
-        "per_device_eval_batch_size": int(cfg.get("batch_size", 1)),
+        "per_device_train_batch_size": per_device_batch_size,
+        "per_device_eval_batch_size": per_device_batch_size,
         "learning_rate": float(cfg.get("learning_rate", 5e-5)),
         "gradient_accumulation_steps": int(cfg.get("gradient_accumulation_steps", 1)),
         "weight_decay": float(cfg.get("weight_decay", 0.0)),
         "warmup_ratio": float(cfg.get("warmup_ratio", 0.0)),
         "max_grad_norm": float(cfg.get("max_grad_norm", 1.0)),
         "logging_strategy": "steps",
-        "logging_steps": max(1, train_dataset_size // max(int(cfg.get("batch_size", 1)), 1)),
-        "save_strategy": "epoch",
-        "save_total_limit": 2,
+        "logging_steps": max(1, logging_steps),
+        "save_strategy": "steps" if save_steps else "epoch",
+        "save_total_limit": max(1, save_total_limit),
         "load_best_model_at_end": True,
         "metric_for_best_model": "eval_loss",
         "greater_is_better": False,
@@ -121,7 +164,11 @@ def build_training_arguments(cfg: dict[str, Any], output_dir: Path, train_datase
 
     init_parameters = inspect.signature(training_arguments_cls.__init__).parameters
     evaluation_key = "eval_strategy" if "eval_strategy" in init_parameters else "evaluation_strategy"
-    training_kwargs[evaluation_key] = "epoch"
+    training_kwargs[evaluation_key] = "steps" if eval_steps else "epoch"
+    if eval_steps:
+        training_kwargs["eval_steps"] = max(1, int(eval_steps))
+    if save_steps:
+        training_kwargs["save_steps"] = max(1, int(save_steps))
     return training_arguments_cls(**training_kwargs)
 
 
@@ -235,6 +282,37 @@ def execute_hf_continued_pretraining(
     if getattr(model.config, "pad_token_id", None) is None and tokenizer.pad_token_id is not None:
         model.config.pad_token_id = tokenizer.pad_token_id
 
+    adaptation_method = resolve_adaptation_method(cfg)
+    lora_config_payload: dict[str, Any] | None = None
+    if adaptation_method == "lora":
+        from peft import LoraConfig, TaskType, get_peft_model
+
+        target_modules = cfg.get("lora_target_modules")
+        if not target_modules:
+            target_modules = infer_lora_target_modules(model)
+        elif not isinstance(target_modules, list):
+            raise ValueError("'lora_target_modules' must be a list of module names")
+        lora_config = LoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            r=int(cfg.get("lora_r", 8)),
+            lora_alpha=int(cfg.get("lora_alpha", 16)),
+            lora_dropout=float(cfg.get("lora_dropout", 0.05)),
+            bias=str(cfg.get("lora_bias", "none")),
+            target_modules=[str(item) for item in target_modules],
+        )
+        model = get_peft_model(model, lora_config)
+        lora_config_payload = {
+            "r": lora_config.r,
+            "lora_alpha": lora_config.lora_alpha,
+            "lora_dropout": lora_config.lora_dropout,
+            "bias": lora_config.bias,
+            "target_modules": list(lora_config.target_modules),
+        }
+    elif adaptation_method != "full":
+        raise ValueError(f"Unsupported adaptation_method: {adaptation_method}")
+
+    trainable_parameters, total_parameters = count_parameters(model)
+
     training_args = build_training_arguments(
         cfg=cfg,
         output_dir=output_checkpoints_dir,
@@ -268,8 +346,9 @@ def execute_hf_continued_pretraining(
     if tokens_per_second is not None:
         train_metrics["tokens_per_second_estimate"] = tokens_per_second
 
-    return {
+    summary = {
         "training_backend": "continued_pretraining",
+        "adaptation_method": adaptation_method,
         "base_model_id": model_id,
         "tokenizer_name": tokenizer_name,
         "resolved_device": resolved_device,
@@ -277,6 +356,9 @@ def execute_hf_continued_pretraining(
         "best_checkpoint": best_checkpoint,
         "final_model_dir": str(final_model_dir),
         "checkpoint_dirs": checkpoint_dirs,
+        "trainable_parameters": trainable_parameters,
+        "total_parameters": total_parameters,
+        "trainable_parameter_ratio": round(trainable_parameters / total_parameters, 6) if total_parameters else None,
         "train_dataset": {
             "documents": dataset_manifest["resolved_splits"]["train"]["document_count"],
             "tokens": train_dataset.token_count,
@@ -294,6 +376,9 @@ def execute_hf_continued_pretraining(
         "test_metrics": test_metrics,
         "log_history": trainer.state.log_history,
     }
+    if lora_config_payload is not None:
+        summary["lora_config"] = lora_config_payload
+    return summary
 
 
 def run(
@@ -334,6 +419,7 @@ def run(
                 "project": cfg.get("project", "default"),
                 "base_model_id": cfg.get("base_model_id", "sshleifer/tiny-gpt2"),
                 "tokenizer_name": cfg.get("tokenizer_name", cfg.get("base_model_id", "sshleifer/tiny-gpt2")),
+                "adaptation_method": resolve_adaptation_method(cfg),
                 "epochs": cfg.get("epochs", 1),
                 "batch_size": cfg.get("batch_size", 1),
                 "learning_rate": cfg.get("learning_rate", 5e-5),
@@ -351,6 +437,15 @@ def run(
         test_metrics = summary.get("test_metrics", {})
         if summary.get("resolved_device") is not None:
             mlflow.log_param("resolved_device", str(summary["resolved_device"]))
+        if summary.get("trainable_parameters") is not None:
+            mlflow.log_param("trainable_parameters", int(summary["trainable_parameters"]))
+        if summary.get("total_parameters") is not None:
+            mlflow.log_param("total_parameters", int(summary["total_parameters"]))
+        if summary.get("trainable_parameter_ratio") is not None:
+            mlflow.log_param("trainable_parameter_ratio", float(summary["trainable_parameter_ratio"]))
+        lora_config = summary.get("lora_config")
+        if isinstance(lora_config, dict):
+            mlflow.log_params({f"lora_{key}": value for key, value in lora_config.items()})
 
         if train_metrics.get("train_loss") is not None:
             mlflow.log_metric("train_loss", float(train_metrics["train_loss"]))

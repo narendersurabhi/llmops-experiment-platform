@@ -6,8 +6,10 @@ import pytest
 pytest.importorskip("mlflow")
 from components.trainer.run_pretraining import (
     build_training_arguments,
+    infer_lora_target_modules,
     load_dataset_manifest,
     patch_accelerator_class_unwrap_model_compat,
+    resolve_adaptation_method,
     resolve_trainer_device,
     run,
 )
@@ -54,8 +56,19 @@ def test_continued_pretraining_summary(tmp_path: Path, monkeypatch: pytest.Monke
         return {
             "training_backend": "continued_pretraining",
             "base_model_id": cfg_payload["base_model_id"],
+            "adaptation_method": cfg_payload.get("adaptation_method", "full"),
             "resolved_device": "mps",
             "best_checkpoint": str(checkpoint_dir),
+            "trainable_parameters": 1234,
+            "total_parameters": 5678,
+            "trainable_parameter_ratio": 0.21733,
+            "lora_config": {
+                "r": 8,
+                "lora_alpha": 16,
+                "lora_dropout": 0.05,
+                "bias": "none",
+                "target_modules": ["q_proj", "v_proj"],
+            },
             "train_metrics": {"train_loss": 1.23, "tokens_per_second_estimate": 456.0},
             "validation_metrics": {"validation_loss": 1.11, "validation_perplexity": 3.03},
             "test_metrics": {"test_loss": 1.22, "test_perplexity": 3.39},
@@ -67,8 +80,41 @@ def test_continued_pretraining_summary(tmp_path: Path, monkeypatch: pytest.Monke
     payload = json.loads(Path(summary_path).read_text(encoding="utf-8"))
     assert Path(summary_path).exists()
     assert payload["training_backend"] == "continued_pretraining"
+    assert payload["adaptation_method"] == "full"
     assert payload["resolved_device"] == "mps"
     assert payload["best_checkpoint"].endswith("checkpoint-1")
+    assert payload["trainable_parameters"] == 1234
+    assert payload["total_parameters"] == 5678
+    assert payload["lora_config"]["target_modules"] == ["q_proj", "v_proj"]
+
+
+def test_resolve_adaptation_method_defaults_to_full():
+    assert resolve_adaptation_method({}) == "full"
+    assert resolve_adaptation_method({"adaptation_method": "LoRA"}) == "lora"
+
+
+def test_infer_lora_target_modules_returns_known_suffixes():
+    class DummyModel:
+        def named_modules(self):
+            return iter(
+                [
+                    ("model.layers.0.self_attn.q_proj", object()),
+                    ("model.layers.0.self_attn.v_proj", object()),
+                    ("model.layers.0.mlp.up_proj", object()),
+                    ("model.layers.0.input_layernorm", object()),
+                ]
+            )
+
+    assert infer_lora_target_modules(DummyModel()) == ["q_proj", "v_proj", "up_proj"]
+
+
+def test_infer_lora_target_modules_requires_supported_module_names():
+    class DummyModel:
+        def named_modules(self):
+            return iter([("model.layers.0.input_layernorm", object())])
+
+    with pytest.raises(ValueError, match="Could not infer LoRA target modules"):
+        infer_lora_target_modules(DummyModel())
 
 
 def test_build_training_arguments_uses_eval_strategy_when_available():
@@ -93,6 +139,35 @@ def test_build_training_arguments_uses_evaluation_strategy_for_older_signatures(
 
     build_training_arguments({}, Path("/tmp/out"), 4, DummyTrainingArguments)
     assert captured["evaluation_strategy"] == "epoch"
+
+
+def test_build_training_arguments_uses_step_based_eval_and_save_when_configured():
+    captured = {}
+
+    class DummyTrainingArguments:
+        def __init__(self, *, eval_strategy=None, **kwargs):
+            captured["eval_strategy"] = eval_strategy
+            captured["kwargs"] = kwargs
+
+    build_training_arguments(
+        {
+            "batch_size": 1,
+            "logging_steps": 7,
+            "eval_steps": 25,
+            "save_steps": 25,
+            "save_total_limit": 4,
+        },
+        Path("/tmp/out"),
+        100,
+        DummyTrainingArguments,
+    )
+
+    assert captured["eval_strategy"] == "steps"
+    assert captured["kwargs"]["logging_steps"] == 7
+    assert captured["kwargs"]["save_strategy"] == "steps"
+    assert captured["kwargs"]["eval_steps"] == 25
+    assert captured["kwargs"]["save_steps"] == 25
+    assert captured["kwargs"]["save_total_limit"] == 4
 
 
 def test_patch_accelerator_class_unwrap_model_compat_adds_keep_torch_compile():

@@ -1,0 +1,16 @@
+{
+  "dataset_name": "qwen2-5-0-5b-healthcare-pubmed-cpt-1500",
+  "dataset_version": "pubmed-healthcare-20250101-20260405-500x3-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "pubmed-pmc-open-access",
+  "language": "en",
+  "query": "(\"healthcare\"[Title/Abstract] OR \"health care\"[Title/Abstract] OR \"hospital\"[Title/Abstract] OR \"patient care\"[Title/Abstract] OR \"clinical\"[Title/Abstract]) AND english[lang] AND hasabstract[text] AND pubmed pmc open access[filter]",
+  "from_date": "2025/01/01",
+  "to_date": "2026/04/05",
+  "splits": {
+    "train": "cpt/qwen2_5_0_5b_healthcare_pubmed_500/train.jsonl",
+    "eval": "cpt/qwen2_5_0_5b_healthcare_pubmed_500/eval.jsonl",
+    "test": "cpt/qwen2_5_0_5b_healthcare_pubmed_500/test.jsonl"
+  }
+}

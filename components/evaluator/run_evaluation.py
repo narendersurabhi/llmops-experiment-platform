@@ -694,13 +694,24 @@ def load_cpt_model_and_tokenizer(model_uri: str):
 
     model_source = resolve_model_source_from_uri(model_uri)
     resolved_device = resolve_local_torch_device()
+    print(f"[llmops-cpt-eval] Loading tokenizer from {model_source}", flush=True)
     tokenizer = AutoTokenizer.from_pretrained(model_source)
     tokenizer.padding_side = "left"
     if tokenizer.pad_token_id is None and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(model_source)
+    print(f"[llmops-cpt-eval] Loading model weights on {resolved_device}", flush=True)
+    adapter_config_path = Path(model_source) / "adapter_config.json"
+    if adapter_config_path.exists():
+        from peft import PeftConfig, PeftModel
+
+        peft_config = PeftConfig.from_pretrained(model_source)
+        model = AutoModelForCausalLM.from_pretrained(peft_config.base_model_name_or_path)
+        model = PeftModel.from_pretrained(model, model_source)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(model_source)
     model.to(resolved_device)
     model.eval()
+    print(f"[llmops-cpt-eval] Model is ready on {resolved_device}", flush=True)
     return tokenizer, model, model_source, resolved_device
 
 
@@ -971,6 +982,7 @@ def run_single_model_cpt_evaluation(
     publish_model_cards = bool(cfg.get("publish_model_cards", True))
 
     tokenizer, model, model_source, resolved_device = load_cpt_model_and_tokenizer(model_uri)
+    print("[llmops-cpt-eval] Evaluating validation split", flush=True)
     validation_metrics = evaluate_cpt_split(
         model=model,
         tokenizer=tokenizer,
@@ -979,6 +991,7 @@ def run_single_model_cpt_evaluation(
         batch_size=eval_batch_size,
         device=resolved_device,
     )
+    print("[llmops-cpt-eval] Evaluating test split", flush=True)
     test_metrics = evaluate_cpt_split(
         model=model,
         tokenizer=tokenizer,
@@ -987,6 +1000,7 @@ def run_single_model_cpt_evaluation(
         batch_size=eval_batch_size,
         device=resolved_device,
     )
+    print(f"[llmops-cpt-eval] Generating completion samples from {completion_split} split", flush=True)
     completion_samples = generate_cpt_completion_samples(
         model=model,
         tokenizer=tokenizer,
@@ -1001,6 +1015,7 @@ def run_single_model_cpt_evaluation(
     completion_reference_token_recall = average(
         [float(sample["reference_token_recall"]) for sample in completion_samples]
     )
+    print("[llmops-cpt-eval] Writing scorecard and model card artifacts", flush=True)
 
     scorecard = {
         "model_uri": model_uri,

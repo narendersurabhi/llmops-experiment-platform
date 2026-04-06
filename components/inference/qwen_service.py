@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import threading
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -74,7 +75,15 @@ def load_model() -> tuple[Any, Any]:
     tokenizer.padding_side = "left"
     if tokenizer.pad_token_id is None and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID)
+    adapter_config_path = Path(MODEL_ID) / "adapter_config.json"
+    if adapter_config_path.exists():
+        from peft import PeftConfig, PeftModel
+
+        peft_config = PeftConfig.from_pretrained(MODEL_ID)
+        model = AutoModelForCausalLM.from_pretrained(peft_config.base_model_name_or_path)
+        model = PeftModel.from_pretrained(model, MODEL_ID)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID)
     model.to(resolved_device)
     model.eval()
     return tokenizer, model, resolved_device

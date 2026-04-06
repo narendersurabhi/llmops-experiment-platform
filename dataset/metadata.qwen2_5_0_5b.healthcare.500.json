@@ -1,0 +1,13 @@
+{
+  "dataset_name": "qwen2-5-0-5b-healthcare-cpt-1500",
+  "dataset_version": "healthcare-cpt-500x3-v1",
+  "format": "jsonl",
+  "text_field": "text",
+  "source": "synthetic-healthcare-operations",
+  "language": "en",
+  "splits": {
+    "train": "cpt/qwen2_5_0_5b_healthcare_500/train.jsonl",
+    "eval": "cpt/qwen2_5_0_5b_healthcare_500/eval.jsonl",
+    "test": "cpt/qwen2_5_0_5b_healthcare_500/test.jsonl"
+  }
+}
